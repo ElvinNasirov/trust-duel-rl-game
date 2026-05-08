@@ -201,7 +201,7 @@ def train_q_agent_against_pool(
     all_logs = []
 
     for episode in range(1, episodes + 1):
-        opponent_template = copy.deepcopy(rng.choice(opponent_strategies).item())
+        opponent_template = copy.deepcopy(rng.choice(opponent_strategies))
         agent, log = train_q_agent(
             opponent_template,
             episodes=1,
