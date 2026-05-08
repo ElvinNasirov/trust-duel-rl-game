@@ -192,16 +192,25 @@ def train_q_agent_against_pool(
     seed: int | None = 42,
 ) -> tuple[QLearningAgent, pd.DataFrame]:
     """
-    Train a Q-learning agent against a random opponent from a pool each episode.
-    This makes the learned policy less dependent on one single opponent.
+    Train a Q-learning agent against a balanced pool of opponents.
+    Each strategy appears roughly the same number of times.
     """
     rng = np.random.default_rng(seed)
     agent = QLearningAgent(seed=seed)
 
     all_logs = []
 
-    for episode in range(1, episodes + 1):
-        opponent_template = copy.deepcopy(rng.choice(opponent_strategies))
+    strategy_indices = []
+    while len(strategy_indices) < episodes:
+        cycle = list(range(len(opponent_strategies)))
+        rng.shuffle(cycle)
+        strategy_indices.extend(cycle)
+
+    strategy_indices = strategy_indices[:episodes]
+
+    for episode, idx in enumerate(strategy_indices, start=1):
+        opponent_template = copy.deepcopy(opponent_strategies[idx])
+
         agent, log = train_q_agent(
             opponent_template,
             episodes=1,
@@ -209,9 +218,11 @@ def train_q_agent_against_pool(
             agent=agent,
             seed=int(rng.integers(0, 1_000_000)),
         )
+
         row = log.iloc[0].to_dict()
         row["episode"] = episode
         row["opponent"] = opponent_template.name
+        row["avg_reward_per_round"] = row["total_reward"] / rounds_per_episode
         all_logs.append(row)
 
     return agent, pd.DataFrame(all_logs)
